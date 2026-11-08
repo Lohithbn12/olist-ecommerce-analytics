@@ -1,0 +1,51 @@
+// ---------- Calculated table: Modeling > New table ----------
+dim_date =
+ADDCOLUMNS(
+    CALENDAR(DATE(2016,9,1), DATE(2018,10,31)),
+    "Year", YEAR([Date]),
+    "Month No", MONTH([Date]),
+    "Month", FORMAT([Date], "MMM"),
+    "Quarter", "Q" & QUARTER([Date]),
+    "YearMonth", FORMAT([Date], "YYYY-MM")
+)
+// Then: Table tools > Mark as date table > Date.  Sort Month by Month No.
+
+// ---------- Measures (create a table called _Measures and add these) ----------
+Total Revenue   = SUM(fact_order_items[price])
+Total Freight   = SUM(fact_order_items[freight_value])
+Total Orders    = DISTINCTCOUNT(fact_orders[order_id])
+AOV             = DIVIDE([Total Revenue], [Total Orders])
+Total Customers = DISTINCTCOUNT(fact_orders[customer_unique_id])
+
+Revenue LY    = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(dim_date[Date]))
+Revenue YoY % = DIVIDE([Total Revenue] - [Revenue LY], [Revenue LY])
+Revenue MoM % =
+VAR prev = CALCULATE([Total Revenue], DATEADD(dim_date[Date], -1, MONTH))
+RETURN DIVIDE([Total Revenue] - prev, prev)
+Revenue YTD   = TOTALYTD([Total Revenue], dim_date[Date])
+
+Avg Delivery Days = AVERAGE(fact_orders[delivery_days])
+On-Time Delivery % =
+DIVIDE(
+    CALCULATE(COUNTROWS(fact_orders), fact_orders[delay_days] <= 0),
+    CALCULATE(COUNTROWS(fact_orders), NOT ISBLANK(fact_orders[delay_days]))
+)
+Avg Review Score = AVERAGE(fact_orders[review_score])
+
+Repeat Customers =
+COUNTROWS(
+    FILTER(VALUES(fact_orders[customer_unique_id]),
+           CALCULATE([Total Orders]) > 1)
+)
+Repeat Customer % = DIVIDE([Repeat Customers], [Total Customers])
+
+Revenue Rank Category = RANKX(ALL(dim_product[category]), [Total Revenue])
+
+// ---------- Calculated column on fact_orders (for delay vs review chart) ----------
+Delay Bucket =
+SWITCH(TRUE(),
+    ISBLANK(fact_orders[delay_days]), "Not delivered",
+    fact_orders[delay_days] <= -7, "Early 7+ days",
+    fact_orders[delay_days] <= 0,  "On time",
+    fact_orders[delay_days] <= 7,  "Late 1-7 days",
+    "Late 7+ days")

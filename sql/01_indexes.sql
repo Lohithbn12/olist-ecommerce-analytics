@@ -1,0 +1,10 @@
+CREATE INDEX ix_orders_oid   ON stg_orders (order_id);
+CREATE INDEX ix_orders_cid   ON stg_orders (customer_id);
+CREATE INDEX ix_cust_cid     ON stg_customers (customer_id);
+CREATE INDEX ix_items_oid    ON stg_order_items (order_id);
+CREATE INDEX ix_items_pid    ON stg_order_items (product_id);
+CREATE INDEX ix_pay_oid      ON stg_payments (order_id);
+CREATE INDEX ix_rev_oid      ON stg_reviews (order_id);
+CREATE INDEX ix_prod_pid     ON stg_products (product_id);
+CREATE INDEX ix_sell_sid     ON stg_sellers (seller_id);
+CREATE INDEX ix_cat_name     ON stg_category_translation (product_category_name);
